@@ -18,9 +18,21 @@ import mysql.connector
 from mysql.connector import Error
 
 # 0-stream_users.py
-
+import os
+from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import Error
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Database configuration using environment variables
+DB_CONFIG = {
+    "host": os.environ.get("DB_HOST", "localhost"),
+    "user": os.environ.get("DB_USER"),
+    "password": os.environ.get("DB_PASSWORD"),
+    "database": os.environ.get("DB_DATABASE", "ALX_prodev")
+}
 
 def stream_users():
     """Generator that streams rows from the user_data table one by one."""
@@ -29,25 +41,19 @@ def stream_users():
 
     try:
         # Connect to the database
-        connection = mysql.connector.connect(
-            host='localhost',
-            user='solomon',            # update if needed
-            password='solomon@2025',   # update with your password
-            database='ALX_prodev'
-        )
+        with mysql.connector.connect(**DB_CONFIG) as connection:
+            if not connection.is_connected():
+                raise ConnectionError(f"Failed to connect to database at {DB_CONFIG['host']}")
+        
+            with connection.cursor(dictionary=True) as cursor:
+                cursor.execute("SELECT * FROM user_data;")
 
-        cursor = connection.cursor(dictionary=True, buffered=True)
-        cursor.execute("SELECT * FROM user_data;")
-
-        # Single loop: yield each row
-        for row in cursor:
-            yield row
+                # Single loop: yield each row
+                while True:
+                    row = cursor.fetchone()
+                    if row is None:
+                        break  # No more rows
+                    yield row
 
     except Error as e:
         print("Error while streaming users:", e)
-
-    finally:
-        if cursor:
-            cursor.close()
-        if connection and connection.is_connected():
-            connection.close()
