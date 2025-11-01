@@ -17,6 +17,10 @@ Prototype:
 import mysql.connector
 from mysql.connector import Error
 
+# 0-stream_users.py
+
+import mysql.connector
+from mysql.connector import Error
 
 def stream_users():
     """Generator that streams rows from the user_data table one by one."""
@@ -24,29 +28,26 @@ def stream_users():
     cursor = None
 
     try:
-        # Connect to database
+        # Connect to the database
         connection = mysql.connector.connect(
             host='localhost',
-            user='solomon',            # change if needed
-            password='solomon@2025',  # replace with your password
+            user='solomon',            # update if needed
+            password='solomon@2025',   # update with your password
             database='ALX_prodev'
         )
 
-        if connection.is_connected():
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM user_data;")
+        cursor = connection.cursor(dictionary=True, buffered=True)
+        cursor.execute("SELECT * FROM user_data;")
 
-            # Use fetchone() repeatedly instead of iterating the cursor
-            row = cursor.fetchone()
-            while row:
-                yield row
-                row = cursor.fetchone()
+        # Single loop: yield each row
+        for row in cursor:
+            yield row
 
     except Error as e:
         print("Error while streaming users:", e)
 
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
-        if connection is not None and connection.is_connected():
+        if connection and connection.is_connected():
             connection.close()
