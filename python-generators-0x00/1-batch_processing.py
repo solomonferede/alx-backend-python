@@ -89,4 +89,5 @@ def batch_processing(batch_size):
             for user in filtered_users:
                 print(user)
         else:
+            return None
             print(f"No users found over age 25 in this batch.")
