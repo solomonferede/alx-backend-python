@@ -24,7 +24,6 @@ DB_CONFIG = {
     'password': os.environ.get('DB_PASSWORD'),
     'database': os.environ.get('DB_DATABASE', 'ALX_prodev'),
 }
-QUERY = "SELECT * FROM user_data;"
 
 # --- Helper Function ---
 
@@ -44,7 +43,7 @@ def paginate_users(page_size, offset):
         cursor = connection.cursor(dictionary=True)
         
         # SQL with pagination parameters
-        sql = f"{QUERY} LIMIT {page_size} OFFSET {offset}"
+        sql = f"SELECT * FROM user_data LIMIT {page_size} OFFSET {offset}"
         cursor.execute(sql)
         
         # Fetch all rows for the current page
