@@ -24,8 +24,7 @@ DB_CONFIG = {
     'password': os.environ.get('DB_PASSWORD'),
     'database': os.environ.get('DB_DATABASE', 'ALX_prodev'),
 }
-
-QUERY = "SELECT user_id, name, email, age FROM user_data"
+QUERY = "SELECT * FROM user_data;"
 
 # --- Helper Function ---
 
