@@ -21,6 +21,7 @@ def create_users(query):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
     cursor.execute(query)
+    conn.commit()
     conn.close()
 
 @log_queries
@@ -34,8 +35,9 @@ def fetch_all_users(query):
 
 #### fetch users while logging the query
 create_users(query="CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER);")
-create_users(query="INSERT INTO USERS (NAME, AGE) VALUES ('SOLOMON', '31');")
-create_users(query="INSERT INTO USERS (NAME, AGE) VALUES ('ALEX', '28');")
-create_users(query="INSERT INTO USERS (NAME, AGE) VALUES ('MARIA', '25');")
-create_users(query="INSERT INTO USERS (NAME, AGE) VALUES ('JOHN', '35');")
+create_users(query="INSERT INTO USERS (name, age) VALUES ('SOLOMON', '31');")
+create_users(query="INSERT INTO USERS (name, age) VALUES ('ALEX', '28');")
+create_users(query="INSERT INTO USERS (name, age) VALUES ('MARIA', '25');")
+create_users(query="INSERT INTO USERS (name, age) VALUES ('JOHN', '35');")
 users = fetch_all_users(query="SELECT * FROM users")
+print(users)
