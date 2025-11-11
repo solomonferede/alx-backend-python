@@ -3,7 +3,7 @@ import functools
 from datetime import datetime
 
 
-#### decorator to log SQL queries
+# Decorator to log SQL queries with timestamp
 def log_queries(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -16,6 +16,7 @@ def log_queries(func):
         return func(*args, **kwargs)
     return wrapper
 
+
 @log_queries
 def create_users(query):
     conn = sqlite3.connect('users.db')
@@ -23,6 +24,7 @@ def create_users(query):
     cursor.execute(query)
     conn.commit()
     conn.close()
+
 
 @log_queries
 def fetch_all_users(query):
@@ -33,11 +35,25 @@ def fetch_all_users(query):
     conn.close()
     return results
 
-#### fetch users while logging the query
-create_users(query="CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER);")
-create_users(query="INSERT INTO USERS (name, age) VALUES ('SOLOMON', '31');")
-create_users(query="INSERT INTO USERS (name, age) VALUES ('ALEX', '28');")
-create_users(query="INSERT INTO USERS (name, age) VALUES ('MARIA', '25');")
-create_users(query="INSERT INTO USERS (name, age) VALUES ('JOHN', '35');")
-users = fetch_all_users(query="SELECT * FROM users")
-print(users)
+
+# === Create table with email field ===
+create_users(query="""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    age INTEGER,
+    email TEXT
+);
+""")
+
+# === Insert users with email addresses ===
+create_users(query="INSERT INTO users (name, age, email) VALUES ('SOLOMON', 31, 'solomon@example.com');")
+create_users(query="INSERT INTO users (name, age, email) VALUES ('ALEX', 28, 'alex@example.com');")
+create_users(query="INSERT INTO users (name, age, email) VALUES ('MARIA', 25, 'maria@example.com');")
+create_users(query="INSERT INTO users (name, age, email) VALUES ('JOHN', 35, 'john@example.com');")
+
+# === Fetch and display all users ===
+users = fetch_all_users(query="SELECT * FROM users;")
+print("\nAll Users:")
+for user in users:
+    print(user)
