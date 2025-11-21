@@ -104,7 +104,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Set up patching for requests.get to return fixture data."""
+        """Start patching requests.get before any tests run."""
         cls.get_patcher = patch("client.requests.get")
         cls.mock_get = cls.get_patcher.start()
 
@@ -123,7 +123,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        """Stop patching requests.get."""
+        """Stop patching requests.get after all tests run."""
         cls.get_patcher.stop()
 
     def test_public_repos(self):
@@ -137,7 +137,6 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         client = GithubOrgClient("test_org")
         repos = client.public_repos(license="apache-2.0")
         self.assertEqual(repos, self.apache2_repos)
-
 
 
 if __name__ == "__main__":
