@@ -31,8 +31,8 @@ class TestGithubOrgClient(unittest.TestCase):
             f"https://api.github.com/orgs/{org_name}")
 
     def test_public_repos_url(self):
-        """Test that _public_repos_url returns the correct
-        URL based on org payload."""
+        """Test that _public_repos_url return
+        the correct URL based on org payload."""
         org_payload = {"repos_url":
                        "https://api.github.com/orgs/test_org/repos"}
         client = GithubOrgClient("test_org")
@@ -49,8 +49,12 @@ class TestGithubOrgClient(unittest.TestCase):
 
     @patch("client.get_json")
     def test_public_repos(self, mock_get_json):
-        """Test that public_repos returns the correct list of repo names."""
-        # Mocked JSON payload returned by get_json
+        """Test that public_repos returns the correct list of repo names.
+
+        get_json is patched and returns a fake payload.
+        _public_repos_url property is patched as a context manager.
+        """
+        # Mocked repos payload returned by get_json
         repos_payload = [
             {"name": "repo1", "license": {"key": "mit"}},
             {"name": "repo2", "license": {"key": "apache-2.0"}},
@@ -59,8 +63,7 @@ class TestGithubOrgClient(unittest.TestCase):
 
         client = GithubOrgClient("test_org")
 
-        # Patch _public_repos_url property to return any
-        # string (not used in get_json)
+        # Patch _public_repos_url property to return any URL
         with patch(
             "client.GithubOrgClient._public_repos_url",
             new_callable=PropertyMock
