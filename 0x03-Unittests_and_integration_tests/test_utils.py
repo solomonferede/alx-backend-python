@@ -41,7 +41,7 @@ class TestGetJson(unittest.TestCase):
     @patch("utils.requests.get")
     def test_get_json(self, test_url, test_payload, mock_get):
         """Test that get_json returns the correct JSON payload."""
-        
+
         # Configure mock response object
         mock_response = Mock()
         mock_response.json.return_value = test_payload
@@ -59,7 +59,8 @@ class TestMemoize(unittest.TestCase):
     """Unit tests for utils.memoize decorator."""
 
     def test_memoize(self):
-        """Test that memoize caches method result and calls underlying method once."""
+        """Test that memoize caches method result and
+        calls underlying method once."""
 
         class TestClass:
             def a_method(self):
@@ -69,7 +70,8 @@ class TestMemoize(unittest.TestCase):
             def a_property(self):
                 return self.a_method()
 
-        with patch.object(TestClass, "a_method", return_value=42) as mock_method:
+        with patch.object(TestClass, "a_method",
+                          return_value=42) as mock_method:
             obj = TestClass()
 
             # First call → calls the method
