@@ -18,8 +18,8 @@ class TestGithubOrgClient(unittest.TestCase):
         payload and calls get_json once."""
 
         # Set a fake return value for get_json
-        fake_payload = {"login": org_name, "repos_url": f"https://api.github.com/orgs/\
-                        {org_name}/repos"}
+        fake_payload = {"login": org_name, "repos_url":
+                        f"https://api.github.com/orgs/{org_name}/repos"}
         mock_get_json.return_value = fake_payload
 
         # Create client instance
