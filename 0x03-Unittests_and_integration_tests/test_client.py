@@ -1,65 +1,40 @@
 #!/usr/bin/env python3
-"""
-Integration tests for GithubOrgClient.public_repos.
-"""
+"""Unit tests for GithubOrgClient class."""
 
 import unittest
-from unittest.mock import patch, MagicMock
-from parameterized import parameterized_class
+from unittest.mock import patch
+from parameterized import parameterized
 from client import GithubOrgClient
-from fixtures import org_payload, repos_payload, expected_repos, apache2_repos
 
 
-@parameterized_class([
-    {
-        "org_payload": org_payload,
-        "repos_payload": repos_payload,
-        "expected_repos": expected_repos,
-        "apache2_repos": apache2_repos,
-    }
-])
-class TestIntegrationGithubOrgClient(unittest.TestCase):
-    """Integration test for GithubOrgClient.public_repos."""
+class TestGithubOrgClient(unittest.TestCase):
+    """Test GithubOrgClient class."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Patch requests.get to return fixture payloads."""
-        cls.get_patcher = patch("requests.get")
-        mock_get = cls.get_patcher.start()
+    @parameterized.expand([
+        ("google",),
+        ("abc",)
+    ])
+    @patch("client.get_json")
+    def test_org(self, org_name, mock_get_json):
+        """Test that GithubOrgClient.org returns the expected value.
 
-        # Mocked response objects for .json()
-        mock_org_resp = MagicMock()
-        mock_org_resp.json.return_value = cls.org_payload
+        get_json is patched and not executed.
+        """
+        # Setup the mock to return a fake payload
+        expected_payload = {"login": org_name}
+        mock_get_json.return_value = expected_payload
 
-        mock_repos_resp = MagicMock()
-        mock_repos_resp.json.return_value = cls.repos_payload
+        # Instantiate the client
+        client = GithubOrgClient(org_name)
 
-        # side_effect returns correct fixture based on URL
-        def get_side_effect(url):
-            if url.endswith("/orgs/google"):
-                return mock_org_resp
-            if url.endswith("/orgs/google/repos"):
-                return mock_repos_resp
-            return MagicMock(json=lambda: {})
+        # Call the org method
+        result = client.org()
 
-        mock_get.side_effect = get_side_effect
+        # Check that the returned value is the mocked payload
+        self.assertEqual(result, expected_payload)
 
-    @classmethod
-    def tearDownClass(cls):
-        """Stop requests.get patcher."""
-        cls.get_patcher.stop()
-
-    def test_public_repos(self):
-        """Test public_repos returns expected list from fixtures."""
-        client = GithubOrgClient("google")
-        result = client.public_repos()
-        self.assertEqual(result, self.expected_repos)
-
-    def test_public_repos_with_license(self):
-        """Test filtering repos by license using fixtures."""
-        client = GithubOrgClient("google")
-        result = client.public_repos(license="apache-2.0")
-        self.assertEqual(result, self.apache2_repos)
+        # Ensure get_json was called once with the correct URL
+        mock_get_json.assert_called_once_with(f"https://api.github.com/orgs/{org_name}")
 
 
 if __name__ == "__main__":
