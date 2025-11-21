@@ -2,7 +2,7 @@
 """Unit tests for GithubOrgClient class."""
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 from parameterized import parameterized
 from client import GithubOrgClient
 
@@ -20,21 +20,30 @@ class TestGithubOrgClient(unittest.TestCase):
 
         get_json is patched and not executed.
         """
-        # Setup the mock to return a fake payload
         expected_payload = {"login": org_name}
         mock_get_json.return_value = expected_payload
 
-        # Instantiate the client
         client = GithubOrgClient(org_name)
-
-        # Call the org method
         result = client.org()
 
-        # Check that the returned value is the mocked payload
         self.assertEqual(result, expected_payload)
-
-        # Ensure get_json was called once with the correct URL
         mock_get_json.assert_called_once_with(f"https://api.github.com/orgs/{org_name}")
+
+    def test_public_repos_url(self):
+        """Test that _public_repos_url returns the correct URL based on org payload."""
+        org_payload = {"repos_url": "https://api.github.com/orgs/test_org/repos"}
+        client = GithubOrgClient("test_org")
+
+        # Patch the org property to return org_payload
+        with patch(
+            "client.GithubOrgClient.org",
+            new_callable=PropertyMock
+        ) as mock_org:
+            mock_org.return_value = org_payload
+
+            result = client._public_repos_url
+            self.assertEqual(result, org_payload["repos_url"])
+            mock_org.assert_called_once()
 
 
 if __name__ == "__main__":
