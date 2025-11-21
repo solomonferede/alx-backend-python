@@ -2,7 +2,7 @@
 """Unit tests for GithubOrgClient class."""
 
 import unittest
-from unittest.mock import patch, PropertyMock
+from unittest.mock import patch, PropertyMock, Mock
 from parameterized import parameterized, parameterized_class
 from client import GithubOrgClient
 from fixtures import org_payload, repos_payload, expected_repos, apache2_repos
@@ -100,15 +100,14 @@ class TestGithubOrgClient(unittest.TestCase):
     }
 ])
 class TestIntegrationGithubOrgClient(unittest.TestCase):
-    """Integration tests for GithubOrgClient."""
+    """Integration tests for GithubOrgClient.public_repos."""
 
     @classmethod
     def setUpClass(cls):
-        """Start patching requests.get before any tests run."""
+        """Patch requests.get to return fixture data before any tests run."""
         cls.get_patcher = patch("client.requests.get")
         cls.mock_get = cls.get_patcher.start()
 
-        # Function to return the correct fixture based on URL
         def get_side_effect(url, *args, **kwargs):
             mock_resp = Mock()
             if url.endswith("/orgs/test_org"):
@@ -127,16 +126,16 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         cls.get_patcher.stop()
 
     def test_public_repos(self):
-        """Integration test for public_repos using fixture data."""
+        """Test that public_repos returns the expected list of repository names."""
         client = GithubOrgClient("test_org")
-        repos = client.public_repos()
-        self.assertEqual(repos, self.expected_repos)
+        result = client.public_repos()
+        self.assertEqual(result, self.expected_repos)
 
     def test_public_repos_with_license(self):
-        """Integration test for public_repos with a license filter."""
+        """Test that public_repos returns only repositories with license 'apache-2.0'."""
         client = GithubOrgClient("test_org")
-        repos = client.public_repos(license="apache-2.0")
-        self.assertEqual(repos, self.apache2_repos)
+        result = client.public_repos(license="apache-2.0")
+        self.assertEqual(result, self.apache2_repos)
 
 
 if __name__ == "__main__":
