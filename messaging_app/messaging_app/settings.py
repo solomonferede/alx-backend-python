@@ -29,13 +29,13 @@ ALLOWED_HOSTS = []
 
 
 #default authentication class for all api calls
-default_authentication_classes = [
+DEFAULT_AUTHENTICATION_CLASSES = [
     'rest_framework.authentication.SessionAuthentication',
     'rest_framework.authentication.BasicAuthentication',
 ]
 
 #default permission class for all api calls
-default_permission_classes = [
+DEFAULT_PERMISSIION_CLASSES = [
     'rest_framework.permissions.IsAuthenticated',
 ]
 
