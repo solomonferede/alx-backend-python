@@ -60,7 +60,7 @@ class Conversation(models.Model):
         editable=False,
         unique=True
     )
-    participant_id = models.ManyToManyField(
+    participant = models.ManyToManyField(
         CustomUser,
         related_name='conversations',
         on_delete=models.CASCADE
