@@ -28,6 +28,18 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+#default authentication class for all api calls
+default_authentication_classes = [
+    'rest_framework.authentication.SessionAuthentication',
+    'rest_framework.authentication.BasicAuthentication',
+]
+
+#default permission class for all api calls
+default_permission_classes = [
+    'rest_framework.permissions.IsAuthenticated',
+]
+
+
 # Application definition
 
 INSTALLED_APPS = [
