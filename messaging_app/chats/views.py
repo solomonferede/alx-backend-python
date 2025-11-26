@@ -17,16 +17,23 @@ class ConversationViewSet(viewsets.ViewSet):
         serializer = ConversationSerializer(conversations, many=True)
         return Response(serializer.data)
 
+    # GET /conversations/{id}/
+    def retrieve(self, request, pk=None):
+        try:
+            conversation = Conversation.objects.prefetch_related("participants", "messages__sender").get(conversation_id=pk)
+        except Conversation.DoesNotExist:
+            return Response({"error": "Conversation not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = ConversationSerializer(conversation)
+        return Response(serializer.data)
+
     # POST /conversations/
     def create(self, request):
         participant_ids = request.data.get("participant_ids", [])
         if not participant_ids:
             return Response({"error": "Participants are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create Conversation
         conversation = Conversation.objects.create()
-        
-        # Add participants
         participants = CustomUser.objects.filter(user_id__in=participant_ids)
         conversation.participants.set(participants)
         conversation.save()
@@ -49,6 +56,16 @@ class MessageViewSet(viewsets.ViewSet):
         messages = Message.objects.filter(conversation_id=conversation_id).select_related("sender").all()
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        try:
+            message = Message.objects.select_related("sender_id", "conversation_id").get(message_id=pk)
+        except Message.DoesNotExist:
+            return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = MessageSerializer(message)
+        return Response(serializer.data)
+
 
     # POST /messages/
     def create(self, request):
