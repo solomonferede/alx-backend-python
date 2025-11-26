@@ -32,7 +32,7 @@ class MessageSerializer(serializers.Serializer):
 class ConversationSerializer(serializers.Serializer):
     """Serializer for Conversation model."""
     conversation_id = serializers.UUIDField(read_only=True)
-    participants = UserSerializer(many=True, read_only=True)
+    participants = UserSerializer(many=True)
     messages = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(read_only=True)
 

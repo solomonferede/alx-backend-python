@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'chats',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
