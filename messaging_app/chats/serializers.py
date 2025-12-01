@@ -15,6 +15,19 @@ class UserSerializer(serializers.Serializer):
     role = serializers.CharField()
 
 
+class ConversationSerializer(serializers.Serializer):
+    """Serializer for Conversation model."""
+    conversation_id = serializers.UUIDField(read_only=True)
+    participants = UserSerializer(many=True)
+    messages = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(read_only=True)
+
+    # Include messages nested manually
+    def get_messages(self, obj):
+        qs = obj.messages.all()  # Related name from Message model
+        return MessageSerializer(qs, many=True).data
+
+
 class MessageSerializer(serializers.Serializer):
     """Serializer for Message model. """
     message_id = serializers.UUIDField(read_only=True)
@@ -27,16 +40,3 @@ class MessageSerializer(serializers.Serializer):
         if not value.strip():
             raise serializers.ValidationError("Message cannot be empty")
         return value
-
-
-class ConversationSerializer(serializers.Serializer):
-    """Serializer for Conversation model."""
-    conversation_id = serializers.UUIDField(read_only=True)
-    participants = UserSerializer(many=True)
-    messages = serializers.SerializerMethodField()
-    created_at = serializers.DateTimeField(read_only=True)
-
-    # Include messages nested manually
-    def get_messages(self, obj):
-        qs = obj.messages.all()  # Related name from Message model
-        return MessageSerializer(qs, many=True).data
