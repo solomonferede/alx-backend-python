@@ -24,7 +24,7 @@ class CustomUser(AbstractUser):
     first_name = models.CharField(max_length=50, blank=False)
     last_name = models.CharField(max_length=50, blank=False)
     email = models.EmailField(unique=True, blank=False, db_index=True)
-    hashed_password = models.CharField(max_length=128, blank=False, default='solomon@2025')
+    password = models.CharField(max_length=128, blank=False)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     role = models.CharField(
         max_length=10,
@@ -33,6 +33,8 @@ class CustomUser(AbstractUser):
         blank=False
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
 
 
 class Conversation(models.Model):
@@ -45,7 +47,7 @@ class Conversation(models.Model):
     )
     participants = models.ManyToManyField(
         CustomUser,
-        related_name='conversations',      
+        related_name='conversations'     
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
