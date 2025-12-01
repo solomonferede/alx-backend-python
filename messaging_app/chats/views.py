@@ -5,6 +5,8 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .models import CustomUser, Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer, UserSerializer
+from rest_framework.permissions import IsAuthenticated
+from .permissions import IsParticipantOrReadOnly
 
 
 class ConversationViewSet(viewsets.ViewSet):
@@ -12,6 +14,7 @@ class ConversationViewSet(viewsets.ViewSet):
     List, retrieve, and create conversations.
     """
 
+    permission_classes = [IsAuthenticated, IsParticipantOrReadOnly]
     # -----------------------
     # GET /conversations/
     # -----------------------
@@ -76,6 +79,7 @@ class MessageViewSet(viewsets.ViewSet):
     Supports nested routes under conversations.
     """
 
+    permission_classes = [IsAuthenticated, IsParticipantOrReadOnly]
     # --------------------------------------
     # GET /messages/  OR  GET /conversations/<pk>/messages/
     # --------------------------------------
