@@ -3,7 +3,7 @@
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, ValidationError, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
 from .models import CustomUser, Conversation, Message
@@ -126,16 +126,12 @@ class MessageViewSet(viewsets.ViewSet):
     # -----------------------
     def list(self, request, conversation_pk=None):
         user = request.user
-        queryset = Message.objects.select_related("sender", "conversation").filter(
-            conversation__participants=user
-        )  # only messages in conversations where user is a participant
+
+        # Filter messages only for conversations where user is a participant
+        queryset = Message.objects.filter(conversation__participants=user)
 
         if conversation_pk:
             queryset = queryset.filter(conversation_id=conversation_pk)
-        else:
-            conv_id = request.query_params.get("conversation_id")
-            if conv_id:
-                queryset = queryset.filter(conversation_id=conv_id)
 
         serializer = MessageSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -211,10 +207,10 @@ class MessageViewSet(viewsets.ViewSet):
         except Message.DoesNotExist:
             raise NotFound("Message not found.")
 
-        # Object-level permission check
+        # Object-level permission
         for perm in self.get_permissions():
             if hasattr(perm, "has_object_permission"):
                 if not perm.has_object_permission(self.request, self, message):
-                    raise ValidationError("You do not have permission to access this message.")
+                    raise PermissionDenied("You do not have permission to access this message.")  # <-- 403
 
         return message
