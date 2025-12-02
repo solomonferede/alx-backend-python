@@ -211,6 +211,9 @@ class MessageViewSet(viewsets.ViewSet):
         for perm in self.get_permissions():
             if hasattr(perm, "has_object_permission"):
                 if not perm.has_object_permission(self.request, self, message):
-                    raise PermissionDenied("You do not have permission to access this message.")  # <-- 403
+                    return Response(
+                    {"detail": "You do not have permission to access this message."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         return message
