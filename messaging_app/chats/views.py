@@ -1,27 +1,38 @@
 #!/usr/bin/env python3
-"""Simplified Views for the messaging app using ViewSet."""
+"""Messaging app ViewSets with full CRUD and permissions."""
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from .models import CustomUser, Conversation, Message
-from .serializers import ConversationSerializer, MessageSerializer, UserSerializer
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsParticipantOrReadOnly
+
+from .models import CustomUser, Conversation, Message
+from .serializers import ConversationSerializer, MessageSerializer
+from .permissions import IsParticipantOfConversation
 
 
+# ===========================================================
+# Conversation ViewSet
+# ===========================================================
 class ConversationViewSet(viewsets.ViewSet):
-    """
-    List, retrieve, and create conversations.
-    """
+    permission_classes = [IsAuthenticated]
 
-    permission_classes = [IsAuthenticated, IsParticipantOrReadOnly]
+    def get_permissions(self):
+        """
+        Apply IsParticipantOfConversation for object-level access.
+        """
+        if self.action in ["retrieve", "update", "partial_update", "destroy"]:
+            return [IsAuthenticated(), IsParticipantOfConversation()]
+        return [IsAuthenticated()]
+
     # -----------------------
     # GET /conversations/
     # -----------------------
     def list(self, request):
+        user = request.user
         queryset = Conversation.objects.prefetch_related(
             "participants", "messages__sender"
-        ).all()
+        ).filter(participants=user)  # only conversations where user is a participant
 
         participant_id = request.query_params.get("participant_id")
         if participant_id:
@@ -30,20 +41,12 @@ class ConversationViewSet(viewsets.ViewSet):
         serializer = ConversationSerializer(queryset, many=True)
         return Response(serializer.data)
 
+
     # -----------------------
     # GET /conversations/<id>/
     # -----------------------
     def retrieve(self, request, pk=None):
-        try:
-            conversation = Conversation.objects.prefetch_related(
-                "participants", "messages__sender"
-            ).get(conversation_id=pk)
-        except Conversation.DoesNotExist:
-            return Response(
-                {"error": "Conversation not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
+        conversation = self.get_object(pk)
         serializer = ConversationSerializer(conversation)
         return Response(serializer.data)
 
@@ -52,47 +55,84 @@ class ConversationViewSet(viewsets.ViewSet):
     # -----------------------
     def create(self, request):
         participant_ids = request.data.get("participant_ids")
-
         if not participant_ids:
-            return Response(
-                {"error": "participant_ids is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({"participant_ids": "This field is required."})
 
-        # Create the conversation
         conversation = Conversation.objects.create()
-
-        # Assign participants
         participants = CustomUser.objects.filter(user_id__in=participant_ids)
         conversation.participants.set(participants)
 
         serializer = ConversationSerializer(conversation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    # -----------------------
+    # PUT / PATCH /conversations/<id>/
+    # -----------------------
+    def update(self, request, pk=None):
+        conversation = self.get_object(pk)
+        participant_ids = request.data.get("participant_ids")
 
-# -------------------------------
+        if participant_ids:
+            participants = CustomUser.objects.filter(user_id__in=participant_ids)
+            conversation.participants.set(participants)
+
+        serializer = ConversationSerializer(conversation)
+        return Response(serializer.data)
+
+    def partial_update(self, request, pk=None):
+        return self.update(request, pk)
+
+    # -----------------------
+    # DELETE /conversations/<id>/
+    # -----------------------
+    def destroy(self, request, pk=None):
+        conversation = self.get_object(pk)
+        conversation.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # -----------------------
+    # Helper
+    # -----------------------
+    def get_object(self, pk):
+        try:
+            conversation = Conversation.objects.prefetch_related(
+                "participants", "messages__sender"
+            ).get(conversation_id=pk)
+        except Conversation.DoesNotExist:
+            raise NotFound("Conversation not found.")
+
+        # Trigger object-level permission check
+        for perm in self.get_permissions():
+            if hasattr(perm, "has_object_permission"):
+                if not perm.has_object_permission(self.request, self, conversation):
+                    raise ValidationError("You do not have permission to access this conversation.")
+
+        return conversation
+
+
+# ===========================================================
 # Message ViewSet
-# -------------------------------
+# ===========================================================
 class MessageViewSet(viewsets.ViewSet):
-    """
-    List, retrieve, and send messages.
-    Supports nested routes under conversations.
-    """
+    permission_classes = [IsAuthenticated]
 
-    permission_classes = [IsAuthenticated, IsParticipantOrReadOnly]
-    # --------------------------------------
-    # GET /messages/  OR  GET /conversations/<pk>/messages/
-    # --------------------------------------
+    def get_permissions(self):
+        if self.action in ["list", "retrieve", "update", "partial_update", "destroy", "create"]:
+            return [IsAuthenticated(), IsParticipantOfConversation()]
+        return [IsAuthenticated()]
+
+    # -----------------------
+    # GET /messages/ OR /conversations/<pk>/messages/
+    # -----------------------
     def list(self, request, conversation_pk=None):
-        queryset = Message.objects.select_related(
-            "sender", "conversation"
-        ).all()
+        user = request.user
+        queryset = Message.objects.select_related("sender", "conversation").filter(
+            conversation__participants=user
+        )  # only messages in conversations where user is a participant
 
-        # If using nested routes: /conversations/<id>/messages/
         if conversation_pk:
             queryset = queryset.filter(conversation_id=conversation_pk)
         else:
-            # Normal route filter: /messages/?conversation_id=1
             conv_id = request.query_params.get("conversation_id")
             if conv_id:
                 queryset = queryset.filter(conversation_id=conv_id)
@@ -100,56 +140,36 @@ class MessageViewSet(viewsets.ViewSet):
         serializer = MessageSerializer(queryset, many=True)
         return Response(serializer.data)
 
-    # --------------------------------------
-    # GET /messages/<id>/
-    # --------------------------------------
-    def retrieve(self, request, pk=None, conversation_pk=None):
-        try:
-            message = Message.objects.select_related(
-                "sender", "conversation"
-            ).get(message_id=pk)
-        except Message.DoesNotExist:
-            return Response(
-                {"error": "Message not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
 
+    # -----------------------
+    # GET /messages/<id>/
+    # -----------------------
+    def retrieve(self, request, pk=None, conversation_pk=None):
+        message = self.get_object(pk)
         serializer = MessageSerializer(message)
         return Response(serializer.data)
 
-    # --------------------------------------
-    # POST /messages/  OR  POST /conversations/<pk>/messages/
-    # --------------------------------------
+    # -----------------------
+    # POST /messages/ OR /conversations/<pk>/messages/
+    # -----------------------
     def create(self, request, conversation_pk=None):
         conversation_id = conversation_pk or request.data.get("conversation_id")
         sender_id = request.data.get("sender_id")
         message_body = (request.data.get("message_body") or "").strip()
 
-        # Validate required fields
         if not all([conversation_id, sender_id, message_body]):
-            return Response(
-                {"error": "conversation_id, sender_id, and message_body are required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError("conversation_id, sender_id, and message_body are required.")
 
-        # Check conversation + sender
         try:
             conversation = Conversation.objects.get(conversation_id=conversation_id)
         except Conversation.DoesNotExist:
-            return Response(
-                {"error": "Conversation not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            raise NotFound("Conversation not found.")
 
         try:
             sender = CustomUser.objects.get(user_id=sender_id)
         except CustomUser.DoesNotExist:
-            return Response(
-                {"error": "Sender not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            raise NotFound("Sender not found.")
 
-        # Create and return message
         message = Message.objects.create(
             conversation=conversation,
             sender=sender,
@@ -158,3 +178,43 @@ class MessageViewSet(viewsets.ViewSet):
 
         serializer = MessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    # -----------------------
+    # PUT / PATCH /messages/<id>/
+    # -----------------------
+    def update(self, request, pk=None, conversation_pk=None):
+        message = self.get_object(pk)
+        message_body = (request.data.get("message_body") or "").strip()
+        if message_body:
+            message.message_body = message_body
+            message.save()
+        serializer = MessageSerializer(message)
+        return Response(serializer.data)
+
+    def partial_update(self, request, pk=None, conversation_pk=None):
+        return self.update(request, pk, conversation_pk)
+
+    # -----------------------
+    # DELETE /messages/<id>/
+    # -----------------------
+    def destroy(self, request, pk=None, conversation_pk=None):
+        message = self.get_object(pk)
+        message.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # -----------------------
+    # Helper
+    # -----------------------
+    def get_object(self, pk):
+        try:
+            message = Message.objects.select_related("sender", "conversation").get(message_id=pk)
+        except Message.DoesNotExist:
+            raise NotFound("Message not found.")
+
+        # Object-level permission check
+        for perm in self.get_permissions():
+            if hasattr(perm, "has_object_permission"):
+                if not perm.has_object_permission(self.request, self, message):
+                    raise ValidationError("You do not have permission to access this message.")
+
+        return message

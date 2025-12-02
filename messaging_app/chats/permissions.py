@@ -1,35 +1,41 @@
-from rest_framework import permissions, BasePermission
+from rest_framework import permissions
 
 
-class IsParticipantOrReadOnly(permissions.BasePermission):
+class IsParticipantOfConversation(permissions.BasePermission):
     """
     Custom permission:
-    - Users can access conversations and messages only if they are a participant.
-    - Read-only requests are allowed only for participants.
-    - Write (POST) is allowed only for participants of the conversation.
+    - Only authenticated users can access the API.
+    - Only participants of a conversation can view, send, update, or delete messages.
     """
 
+    def has_permission(self, request, view):
+        # Must be authenticated
+        return request.user and request.user.is_authenticated
+
     def has_object_permission(self, request, view, obj):
-        # Safe methods: GET, HEAD, OPTIONS
-        if request.method in permissions.SAFE_METHODS:
-            return self._is_participant(request, obj)
-
-        # For writes (POST), ensure the user is a participant
-        return self._is_participant(request, obj)
-
-    def _is_participant(self, request, obj):
         """
-        Returns True if the authenticated user is part of the conversation
-        or sender of the message.
+        Object-level permission:
+        - Conversations: user must be a participant
+        - Messages: user must belong to the message's conversation
         """
         user = request.user
 
-        # For Conversation objects
+        # Case 1: Conversation object
         if hasattr(obj, "participants"):
             return user in obj.participants.all()
 
-        # For Message objects
+        # Case 2: Message object
         if hasattr(obj, "conversation"):
-            return user in obj.conversation.participants.all() or obj.sender == user
+            conversation = obj.conversation
+            return user in conversation.participants.all()
 
         return False
+
+    @staticmethod
+    def filter_queryset_for_user(queryset, user):
+        """
+        Filter a queryset to only include objects where the user is a participant.
+        """
+        return queryset.filter(participants=user)
+
+

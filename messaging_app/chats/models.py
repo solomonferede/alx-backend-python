@@ -34,7 +34,7 @@ class CustomUser(AbstractUser):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ['username']
 
 
 class Conversation(models.Model):
