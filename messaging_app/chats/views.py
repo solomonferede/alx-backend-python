@@ -4,11 +4,12 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, ValidationError, PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from .models import CustomUser, Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from .permissions import IsParticipantOfConversation
+from .pagination import MessagePagination
 
 
 # ===========================================================
@@ -133,7 +134,10 @@ class MessageViewSet(viewsets.ViewSet):
         if conversation_pk:
             queryset = queryset.filter(conversation_id=conversation_pk)
 
-        serializer = MessageSerializer(queryset, many=True)
+        paginator = MessagePagination()
+        paginated_qs = paginator.paginate_queryset(queryset.order_by("sent_at"), request)
+
+        serializer = MessageSerializer(paginated_qs, many=True)
         return Response(serializer.data)
 
 
@@ -217,3 +221,31 @@ class MessageViewSet(viewsets.ViewSet):
                 )
 
         return message
+
+
+# ===========================================================
+# Status Check ViewSet
+# ===========================================================
+class StatusViewSet(viewsets.ViewSet):
+    """
+    A simple endpoint to check the API status without requiring authentication.
+    """
+    permission_classes = [AllowAny] # <-- THIS IS THE KEY CHANGE
+
+    def list(self, request):
+        """
+        GET /status/
+        Returns a simple 200 OK status message.
+        """
+        # Adding some helpful diagnostics (current time and date)
+        # We need the timezone-aware version of datetime if USE_TZ=True in settings
+        import datetime
+        
+        # Get the current time in UTC (as Django handles time zones)
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        
+        return Response({
+            "status": "OK",
+            "message": "API is operational",
+            "server_time_utc": now_utc.isoformat(),
+        }, status=status.HTTP_200_OK)
