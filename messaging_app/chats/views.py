@@ -10,6 +10,9 @@ from .models import CustomUser, Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from .permissions import IsParticipantOfConversation
 from .pagination import MessagePagination
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import MessageFilter, ConversationFilter
+
 
 
 # ===========================================================
@@ -116,6 +119,8 @@ class ConversationViewSet(viewsets.ViewSet):
 # ===========================================================
 class MessageViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = MessageFilter
 
     def get_permissions(self):
         if self.action in ["list", "retrieve", "update", "partial_update", "destroy", "create"]:
@@ -134,8 +139,11 @@ class MessageViewSet(viewsets.ViewSet):
         if conversation_pk:
             queryset = queryset.filter(conversation_id=conversation_pk)
 
+        # Apply filters
+        filtered_qs = MessageFilter(request.GET, queryset=queryset).qs
+
         paginator = MessagePagination()
-        paginated_qs = paginator.paginate_queryset(queryset.order_by("sent_at"), request)
+        paginated_qs = paginator.paginate_queryset(filtered_qs.order_by("sent_at"), request)
 
         serializer = MessageSerializer(paginated_qs, many=True)
         return Response(serializer.data)
