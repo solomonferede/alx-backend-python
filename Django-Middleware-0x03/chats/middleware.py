@@ -86,3 +86,30 @@ class OffensiveLanguageMiddleware:
         if x_forwarded_for:
             return x_forwarded_for.split(",")[0].strip()
         return request.META.get("REMOTE_ADDR", "unknown")
+
+
+from django.http import HttpResponseForbidden
+
+class RolePermissionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # Define allowed roles
+        self.allowed_roles = ["admin", "moderator"]
+
+    def __call__(self, request):
+        # Check the user role only if user is authenticated
+        user = getattr(request, "user", None)
+        if user and user.is_authenticated:
+            role = getattr(user, "role", None)
+
+            # Restrict access if role is not allowed
+            if role not in self.allowed_roles:
+                return HttpResponseForbidden(
+                    "You do not have permission to perform this action."
+                )
+        else:
+            # Anonymous users are forbidden
+            return HttpResponseForbidden("You must be logged in to perform this action.")
+
+        return self.get_response(request)
+
