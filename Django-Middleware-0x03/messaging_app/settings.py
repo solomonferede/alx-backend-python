@@ -52,6 +52,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'chats.middleware.RequestLoggingMiddleware',
 ]
 
 REST_FRAMEWORK = {
@@ -159,4 +160,30 @@ AUTH_USER_MODEL = 'chats.CustomUser'
 SIMPLE_JWT = {
     "USER_ID_FIELD": "user_id",
     "USER_ID_CLAIM": "user_id",
+}
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "[{asctime}] {levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "requests_file": {
+            "class": "logging.FileHandler",
+            "filename": "requests.log",
+            "formatter": "default",
+        },
+    },
+    "loggers": {
+        "requests_logger": {
+            "handlers": ["requests_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
 }
