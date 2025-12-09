@@ -1,0 +1,40 @@
+# ----------------------------------------------------------------------
+# Python/Django Standard Git Ignore
+# ----------------------------------------------------------------------
+
+# 1. Virtual Environments
+# Exclude the environment directory itself
+venv/
+.venv/
+env/
+.env/
+
+# 2. Byte-compiled / optimized / temporary files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*~
+
+# 3. Build artifacts
+dist/
+build/
+*.egg-info
+.coverage
+
+# 4. Editor/IDE Specific Files
+# VS Code
+.vscode/
+
+
+# 5. Django Specific Files
+# SQLite database files
+*.sqlite3
+db.sqlite3
+
+
+# 6. Local Configuration (Crucial for Security!)
+# NEVER commit files containing secrets, keys, or local database credentials.
+# Your actual .env file for environment variables should be ignored.
+.env
+settings_local.py
