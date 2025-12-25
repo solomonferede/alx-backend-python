@@ -20,7 +20,9 @@ env = environ.Env(
     DEBUG=(bool, False)
 )
 
-environ.Env.read_env(BASE_DIR / '.env')
+# Read .env only if NOT in Docker
+if not env.bool('IS_DOCKER', default=False):
+    environ.Env.read_env(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -29,10 +31,15 @@ environ.Env.read_env(BASE_DIR / '.env')
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+
+# SECURITY WARNING: don't run with debug turned on in production!
+
+DEBUG = env.bool('DEBUG', False)
+
+# Allow all hosts for development; in production, specify allowed hosts
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
+
 
 
 # Application definition
@@ -110,7 +117,7 @@ WSGI_APPLICATION = 'messaging_app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': env('MYSQL_DATABASE', default='messaging_app_db'),
+        'NAME': env('MYSQL_DATABASE', default='alx_messaging_app_db'),
         'USER': env('MYSQL_USER', default='solomon'),
         'PASSWORD': env('MYSQL_PASSWORD'),
         'HOST': env('MYSQL_HOST', default='db'),

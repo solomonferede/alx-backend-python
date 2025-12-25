@@ -4,13 +4,16 @@ FROM python:3.10-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies needed to build Python packages
+# Install system dependencies needed to build Python packages and MySQL client
 RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
     build-essential \
     python3-dev \
     pkg-config \
+    netcat-traditional \
+    default-mysql-client \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 
 # Upgrade pip
 RUN pip install --upgrade pip
@@ -26,4 +29,7 @@ COPY . /app/
 EXPOSE 8000
 
 # Run Django server
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
