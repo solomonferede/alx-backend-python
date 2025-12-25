@@ -29,13 +29,13 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG}
       MYSQL_HOST: db
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_DATABASE: ${MYSQL_DB}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - .:/app
     entrypoint: ["/app/entrypoint.sh"]
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
 
 volumes:
   db_data:
