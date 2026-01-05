@@ -16,6 +16,17 @@ sleep 10
 echo " Verifying pods:"
 kubectl get pods -l app=django-messaging
 
+
+# Perform load testing using wrk
+if command -v wrk >/dev/null 2>&1; then
+    echo "5️⃣ Performing load test with wrk..."
+    echo "Running wrk for 10 seconds with 10 threads and 50 connections..."
+    wrk -t10 -c50 -d10s http://127.0.0.1:$LOCAL_PORT/
+else
+    echo "⚠️ wrk not installed. Skipping load test."
+fi
+
+
 # Forward service port locally for load testing
 echo " Forwarding service port $LOCAL_PORT locally..."
 kubectl port-forward service/$SERVICE_NAME $LOCAL_PORT:$LOCAL_PORT &
