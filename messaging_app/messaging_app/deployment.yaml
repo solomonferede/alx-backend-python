@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-messaging-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: django-messaging
+  template:
+    metadata:
+      labels:
+        app: django-messaging
+    spec:
+      containers:
+        - name: django-messaging
+          image: messaging_app-web:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+
+          # 🔐 ALL ENV VARIABLES
+          env:
+            - name: IS_DOCKER
+              value: "True"
+
+            - name: SECRET_KEY
+              value: "653++dmd)an7@+ct*ji6amt!-f0$6dcrku5_+%h57mct^_8x#-"
+
+            - name: DEBUG
+              value: "True"
+
+            - name: ALLOWED_HOSTS
+              value: "*"
+
+            # Database-related (even if DB is not running yet)
+            - name: MYSQL_ROOT_PASSWORD
+              value: "root@2025"
+
+            - name: MYSQL_DB
+              value: "alx_messaging_app_db"
+
+            - name: MYSQL_USER
+              value: "solomon"
+
+            - name: MYSQL_PASSWORD
+              value: "solomon@2025"
+
+            - name: MYSQL_HOST
+              value: "db"
+
+            - name: MYSQL_PORT
+              value: "3306"
+
+          command: ["python"]
+          args: ["manage.py", "runserver", "0.0.0.0:8000"]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-messaging-service
+spec:
+  type: ClusterIP
+  selector:
+    app: django-messaging
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+
