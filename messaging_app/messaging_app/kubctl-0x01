@@ -1,0 +1,28 @@
+#!/bin/bash
+# Purpose: Scale Django deployment, verify pods, load test, monitor resources
+
+DEPLOYMENT_NAME="django-messaging-deployment"
+NAMESPACE="default"
+SCALE_REPLICAS=3
+SERVICE_NAME="django-messaging-service"
+LOCAL_PORT=8000
+
+echo " Scaling deployment '${DEPLOYMENT_NAME}' to ${SCALE_REPLICAS} replicas..."
+kubectl scale deployment "$DEPLOYMENT_NAME" --replicas="$SCALE_REPLICAS"
+
+echo " Waiting a few seconds for pods to come up..."
+sleep 10
+
+echo " Verifying pods:"
+kubectl get pods -l app=django-messaging
+
+# Forward service port locally for load testing
+echo " Forwarding service port $LOCAL_PORT locally..."
+kubectl port-forward service/$SERVICE_NAME $LOCAL_PORT:$LOCAL_PORT &
+PF_PID=$!
+sleep 5  # Give time for port-forward to start
+
+
+echo " Monitoring resource usage of pods:"
+kubectl top pods -l app=django-messaging
+
